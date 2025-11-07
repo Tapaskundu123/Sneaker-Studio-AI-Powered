@@ -1,16 +1,8 @@
-// import AuthForm from "@/components/AuthForm";
-// import {signUp} from "@/lib/auth/actions";
+import AuthForm from "@/components/AuthForm";
+ import {signUp} from "@/lib/auth/actions";
 
-// export default function Page() {
-//   return <AuthForm mode="sign-up" onSubmit={signUp} />;
-// }
-
-import React from 'react'
-
-const page = () => {
-  return (
-    <div></div>
-  )
+export default function Page() {
+  return <AuthForm mode="sign-up" onSubmit={signUp} />;
+//    onSubmit={signUp}
+ 
 }
-
-export default page
