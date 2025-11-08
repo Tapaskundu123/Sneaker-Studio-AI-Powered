@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Download, RotateCcw, Shuffle, Upload, Sparkles, Eye, Check, Wand2, Loader2, X, ThumbsUp, ArrowRight, Palette, Zap } from "lucide-react";
 
-// Sneaker products with real-world inspired data
+// Sneaker products with real-world inspired data (keep your base SVG dataURIs)
 const products = [
   { 
     id: "air-max-90", 
@@ -52,7 +52,6 @@ const colorPresets = [
   { name: "Burgundy", color: "#800020", vibe: "rich, refined" }
 ];
 
-// AI suggestion templates for better prompts
 const quickPrompts = [
   "Summer beach vibes",
   "Retro 80s style",
@@ -86,79 +85,7 @@ export default function AIShoeCustomizer() {
   const [aiError, setAiError] = useState(null);
   const [conversationHistory, setConversationHistory] = useState([]);
 
-  // Render canvas whenever customization changes
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = 500;
-    canvas.height = 350;
-    ctx.clearRect(0, 0, 500, 350);
-
-    const product = products.find((p) => p.id === selectedProduct);
-    if (!product) return;
-
-    const baseImg = new Image();
-    baseImg.onload = () => {
-      // Draw base shoe outline
-      ctx.drawImage(baseImg, 0, 0, 500, 350);
-
-      // Apply texture if uploaded
-      if (file) {
-        const texture = new Image();
-        texture.onload = () => {
-          ctx.globalAlpha = 0.5;
-          ctx.drawImage(texture, 80, 60, 340, 150);
-          ctx.globalAlpha = 1;
-        };
-        texture.src = URL.createObjectURL(file);
-      }
-
-      // Upper shoe body with gradient
-      const upperGradient = ctx.createLinearGradient(80, 60, 340, 210);
-      upperGradient.addColorStop(0, custom.upper.color);
-      upperGradient.addColorStop(1, adjustBrightness(custom.upper.color, -15));
-      ctx.fillStyle = upperGradient;
-      ctx.globalAlpha = custom.upper.material === "leather" ? 0.88 : 0.92;
-      ctx.fillRect(80, 60, 340, 150);
-      ctx.globalAlpha = 1;
-
-      // Accent stripe
-      ctx.fillStyle = custom.accent.color;
-      ctx.fillRect(95, 135, 310, 23);
-
-      // Sole
-      ctx.fillStyle = custom.sole.color;
-      ctx.fillRect(70, 195, 340, 25);
-
-      // Shine effect for premium feel
-      const shine = ctx.createLinearGradient(100, 70, 380, 100);
-      shine.addColorStop(0, "rgba(255,255,255,0)");
-      shine.addColorStop(0.5, "rgba(255,255,255,0.4)");
-      shine.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = shine;
-      ctx.fillRect(100, 70, 300, 40);
-
-      // Custom text engraving
-      if (custom.text) {
-        ctx.fillStyle = custom.textColor;
-        ctx.font = `bold ${custom.textSize}px 'Arial Black', sans-serif`;
-        ctx.textAlign = "center";
-        ctx.shadowColor = "rgba(0,0,0,0.4)";
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-        ctx.fillText(custom.text, 250, 140);
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-      }
-    };
-    baseImg.src = product.baseImage;
-  }, [custom, selectedProduct, file]);
-
+  // helper: adjustBrightness
   const adjustBrightness = (color, percent) => {
     const num = parseInt(color.slice(1), 16);
     const amt = Math.round(2.55 * percent);
@@ -167,6 +94,223 @@ export default function AIShoeCustomizer() {
     const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
     return "#" + ((1 << 24) + (R << 16) + (G << 8) + B).toString(16).slice(1);
   };
+
+  // helper: rgb->hex
+  const rgbToHex = (r, g, b) => {
+    const toHex = (n) => n.toString(16).padStart(2, "0");
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+  };
+
+  // helper: compute average color from an Image
+  const getAverageColorFromImage = (image, sampleStep = 8) => {
+    try {
+      const tmp = document.createElement("canvas");
+      tmp.width = image.naturalWidth || image.width;
+      tmp.height = image.naturalHeight || image.height;
+      const tctx = tmp.getContext("2d");
+      tctx.drawImage(image, 0, 0, tmp.width, tmp.height);
+      const { data, width, height } = tctx.getImageData(0, 0, tmp.width, tmp.height);
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let y = 0; y < height; y += sampleStep) {
+        for (let x = 0; x < width; x += sampleStep) {
+          const idx = (y * width + x) * 4;
+          r += data[idx];
+          g += data[idx + 1];
+          b += data[idx + 2];
+          count++;
+        }
+      }
+      if (count === 0) return "#808080";
+      r = Math.round(r / count);
+      g = Math.round(g / count);
+      b = Math.round(b / count);
+      return rgbToHex(r, g, b);
+    } catch (e) {
+      // cross-origin or other issues -> fallback
+      return "#808080";
+    }
+  };
+
+  // main render effect for canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // when texture (uploaded image) is present, use a larger internal size
+    const isTexture = !!file;
+    const cWidth = isTexture ? 1200 : 800;
+    const cHeight = isTexture ? 900 : 600;
+    canvas.width = cWidth;
+    canvas.height = cHeight;
+
+    // Clear
+    ctx.clearRect(0, 0, cWidth, cHeight);
+
+    const product = products.find((p) => p.id === selectedProduct);
+    if (!product) return;
+
+    // If there's an uploaded file -> show only the uploaded image large + small swatch + color overlays
+    if (isTexture) {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        // padding so the image doesn't touch canvas edges
+        const padding = Math.round(Math.min(cWidth, cHeight) * 0.05); // 5%
+        const availableW = cWidth - padding * 2;
+        const availableH = cHeight - padding * 2;
+
+        // maintain aspect ratio
+        const aspect = img.width / img.height;
+        let drawW = availableW;
+        let drawH = Math.round(drawW / aspect);
+        if (drawH > availableH) {
+          drawH = availableH;
+          drawW = Math.round(drawH * aspect);
+        }
+        const offsetX = Math.round((cWidth - drawW) / 2);
+        const offsetY = Math.round((cHeight - drawH) / 2);
+
+        // background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, cWidth, cHeight);
+
+        // draw the uploaded image centered
+        ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
+
+        // Apply upper color tint (global multiply for body, with material alpha)
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = custom.upper.material === "leather" ? 0.88 : 0.92;
+        ctx.fillStyle = custom.upper.color;
+        ctx.fillRect(offsetX, offsetY, drawW, drawH * 0.7); // Tint ~70% of height for upper body
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Accent stripe overlay (horizontal band in middle)
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = custom.accent.color;
+        const stripeY = offsetY + drawH * 0.6;
+        ctx.fillRect(offsetX + drawW * 0.1, stripeY, drawW * 0.8, drawH * 0.05);
+        ctx.globalAlpha = 1;
+
+        // Sole overlay (bottom strip)
+        ctx.fillStyle = custom.sole.color;
+        const soleY = offsetY + drawH * 0.85;
+        ctx.fillRect(offsetX, soleY, drawW, drawH * 0.15);
+
+        // Shine effect (subtle white gradient on upper)
+        const shineGradient = ctx.createLinearGradient(offsetX + drawW * 0.1, offsetY + drawH * 0.1, offsetX + drawW * 0.8, offsetY + drawH * 0.2);
+        shineGradient.addColorStop(0, "rgba(255,255,255,0)");
+        shineGradient.addColorStop(0.5, "rgba(255,255,255,0.3)");
+        shineGradient.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = shineGradient;
+        ctx.fillRect(offsetX + drawW * 0.1, offsetY + drawH * 0.1, drawW * 0.6, drawH * 0.15);
+
+        // Custom text overlay
+        if (custom.text) {
+          ctx.fillStyle = custom.textColor;
+          ctx.font = `bold ${custom.textSize * 2}px 'Arial Black', sans-serif`; // Scaled for larger canvas
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.shadowColor = "rgba(0,0,0,0.4)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetX = 4;
+          ctx.shadowOffsetY = 4;
+          ctx.fillText(custom.text, offsetX + drawW / 2, offsetY + drawH * 0.5);
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+        }
+
+        // light framed border
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "rgba(0,0,0,0.06)";
+        ctx.strokeRect(offsetX - 3, offsetY - 3, drawW + 6, drawH + 6);
+
+        // compute average color and draw a small swatch (from original image, pre-tint)
+        const avgHex = getAverageColorFromImage(img, 6); // sample step smaller -> more accurate
+        const swatchW = Math.round(Math.min(cWidth, cHeight) * 0.12);
+        const swatchH = Math.round(swatchW * 0.66);
+        // place swatch inside image area, bottom-left with padding
+        const swatchX = offsetX + 16;
+        const swatchY = offsetY + drawH - swatchH - 16;
+
+        ctx.fillStyle = avgHex;
+        ctx.fillRect(swatchX, swatchY, swatchW, swatchH);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(255,255,255,0.6)";
+        ctx.strokeRect(swatchX, swatchY, swatchW, swatchH);
+
+        // small label outside swatch for clarity
+        ctx.font = `bold ${Math.round(swatchH * 0.28)}px sans-serif`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        // choose contrasting text color if necessary
+        const darkText = avgHex === "#FFFFFF" || avgHex === "#FFFFF" ? "#333" : "#fff";
+        ctx.fillStyle = darkText;
+        ctx.fillText("Sample", swatchX + 8, swatchY - 8);
+
+        // cleanup objectURL
+        try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+      };
+      img.onerror = () => {
+        try { URL.revokeObjectURL(objectUrl); } catch (e) {}
+      };
+      img.crossOrigin = "anonymous";
+      img.src = objectUrl;
+
+      return;
+    }
+
+    // Otherwise render composed shoe design (base image + gradients + accents + sole + shine + text)
+    const baseImg = new Image();
+    baseImg.onload = () => {
+      // draw base image filling canvas
+      ctx.drawImage(baseImg, 0, 0, cWidth, cHeight);
+
+      // Upper gradient (scaled)
+      const upperGradient = ctx.createLinearGradient(128, 96, cWidth - 256, cHeight - 264);
+      upperGradient.addColorStop(0, custom.upper.color);
+      upperGradient.addColorStop(1, adjustBrightness(custom.upper.color, -15));
+      ctx.fillStyle = upperGradient;
+      ctx.globalAlpha = custom.upper.material === "leather" ? 0.88 : 0.92;
+      ctx.fillRect(128, 96, cWidth - 256, 240);
+      ctx.globalAlpha = 1;
+
+      // Accent stripe
+      ctx.fillStyle = custom.accent.color;
+      ctx.fillRect(152, 216, cWidth - 304, 37);
+
+      // Sole
+      ctx.fillStyle = custom.sole.color;
+      ctx.fillRect(112, 312, cWidth - 224, 40);
+
+      // Shine
+      const shine = ctx.createLinearGradient(160, 112, cWidth - 192, 160);
+      shine.addColorStop(0, "rgba(255,255,255,0)");
+      shine.addColorStop(0.5, "rgba(255,255,255,0.4)");
+      shine.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = shine;
+      ctx.fillRect(160, 112, cWidth - 320, 64);
+
+      // Custom text
+      if (custom.text) {
+        ctx.fillStyle = custom.textColor;
+        ctx.font = `bold ${custom.textSize * 1.5}px 'Arial Black', sans-serif`;
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,0.4)";
+        ctx.shadowBlur = 9;
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 3;
+        ctx.fillText(custom.text, cWidth / 2, 224);
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+      }
+    };
+    baseImg.src = product.baseImage;
+  }, [custom, selectedProduct, file]);
 
   const handleRandom = () => {
     const rand1 = colorPresets[Math.floor(Math.random() * colorPresets.length)];
@@ -183,7 +327,7 @@ export default function AIShoeCustomizer() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate save to backend
+    // Simulate save to backend (replace with real API later)
     await new Promise(resolve => setTimeout(resolve, 1500));
     setIsSaving(false);
     setShowSuccess(true);
@@ -234,17 +378,18 @@ Respond ONLY with valid JSON (no markdown, no backticks):
       });
 
       const data = await response.json();
-      const aiText = data.content.find(item => item.type === "text")?.text || "";
-      
-      // Clean and parse JSON
-      const cleanJson = aiText.replace(/```json|```/g, "").trim();
+      // support anthopic-like content shape, attempt to extract text
+      const aiText = (data?.content && Array.isArray(data.content))
+        ? (data.content.find(item => item.type === "text")?.text || data.content.map(c=>c.text||"").join("\n"))
+        : (data?.message || JSON.stringify(data));
+
+      const cleanJson = String(aiText).replace(/```json|```/g, "").trim();
       const suggestion = JSON.parse(cleanJson);
       
       setAiSuggestion(suggestion);
       
-      // Add to conversation history
-      setConversationHistory([
-        ...conversationHistory,
+      setConversationHistory((h) => [
+        ...h,
         { role: "user", content: aiPrompt },
         { role: "assistant", content: aiText }
       ]);
@@ -261,7 +406,7 @@ Respond ONLY with valid JSON (no markdown, no backticks):
     if (!aiSuggestion) return;
     
     setCustom({
-      upper: { color: aiSuggestion.colors.upper, material: aiSuggestion.material },
+      upper: { color: aiSuggestion.colors.upper, material: aiSuggestion.material || custom.upper.material },
       accent: { color: aiSuggestion.colors.accent },
       sole: { color: aiSuggestion.colors.sole },
       text: aiSuggestion.textSuggestion || custom.text,
@@ -591,7 +736,7 @@ Respond ONLY with valid JSON (no markdown, no backticks):
             {/* Main Canvas */}
             <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur overflow-hidden">
               <CardContent className="p-8">
-                <div className="relative bg-gradient-to-br from-gray-100 via-orange-100 to-gray-200 rounded-3xl p-12 flex items-center justify-center min-h-[500px]">
+                <div className="relative bg-gradient-to-br from-gray-100 via-orange-100 to-gray-200 rounded-3xl p-8 lg:p-12 flex items-center justify-center min-h-[600px] lg:min-h-[700px]">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -599,7 +744,7 @@ Respond ONLY with valid JSON (no markdown, no backticks):
                   >
                     <canvas
                       ref={canvasRef}
-                      className="border-8 border-white rounded-2xl shadow-2xl max-w-full"
+                      className="border-8 border-white rounded-2xl shadow-2xl max-w-full w-[700px] h-[525px] lg:w-[800px] lg:h-[600px]"
                     />
                   </motion.div>
 
