@@ -1,5 +1,7 @@
 import React from "react";
 import  Card  from "../../components/Card";
+import { HeroSection } from "@/components/HeroSection";
+import TrendingPage from "@/components/TrendingPage";
 // import {getCurrentUser} from "@/lib/auth/actions";
 
 const products = [
@@ -47,6 +49,11 @@ const Home = async () => {
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+      <section>
+         <HeroSection/>
+      </section>
+
       <section aria-labelledby="latest" className="pb-12">
         <h2 id="latest" className="mb-6 text-heading-3 text-dark-900">
           Latest shoes
@@ -65,6 +72,10 @@ const Home = async () => {
             />
           ))}
         </div>
+      </section>
+
+      <section>
+        <TrendingPage/>
       </section>
     </main>
   );
