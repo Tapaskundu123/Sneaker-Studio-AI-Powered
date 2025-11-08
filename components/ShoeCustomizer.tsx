@@ -11,6 +11,18 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Download, RotateCcw, Shuffle, Upload, Sparkles, Eye, Check, Wand2, Loader2, X, ThumbsUp, ArrowRight, Palette, Zap } from "lucide-react";
+import { AISuggestionCard } from "./ai/AISuggestionCard"; // Import the new AI card component
+
+// Define the AI Suggestion interface
+interface AISuggestion {
+  styleName: string;
+  description: string;
+  colors: { upper: string; accent: string; sole: string };
+  material: string;
+  textSuggestion: string;
+  textColor: string;
+  reasoning: string;
+}
 
 // Sneaker products with real-world inspired data (keep your base SVG dataURIs)
 const products = [
@@ -334,69 +346,61 @@ export default function AIShoeCustomizer() {
     setTimeout(() => setShowSuccess(false), 3000);
   };
 
+
   const handleAIRequest = async () => {
     if (!aiPrompt.trim()) return;
-    
+
     setIsAiLoading(true);
     setAiError(null);
-    setShowAiPanel(true);
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const product = products.find((p) => p.id === selectedProduct);
+      if (!product) throw new Error("Product not found");
+
+      const response = await fetch("/api/ai-suggest", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [
-            ...conversationHistory,
-            {
-              role: "user",
-              content: `You are an expert sneaker designer. The user wants: "${aiPrompt}"
-
-Current sneaker: ${products.find(p => p.id === selectedProduct)?.name}
-Available materials: ${products.find(p => p.id === selectedProduct)?.options.materials.join(", ")}
-
-Respond ONLY with valid JSON (no markdown, no backticks):
-{
-  "styleName": "Creative 2-3 word name for this design",
-  "description": "Brief 1-sentence description of the vibe",
-  "colors": {
-    "upper": "#hexcode",
-    "accent": "#hexcode",
-    "sole": "#hexcode"
-  },
-  "material": "one of the available materials",
-  "textSuggestion": "Optional 3-8 char text to engrave",
-  "reasoning": "2-3 sentences explaining why these choices work"
-}`
-            }
-          ],
-        })
+          userInput: aiPrompt,
+          selectedProduct: product,
+        }),
       });
 
-      const data = await response.json();
-      // support anthopic-like content shape, attempt to extract text
-      const aiText = (data?.content && Array.isArray(data.content))
-        ? (data.content.find(item => item.type === "text")?.text || data.content.map(c=>c.text||"").join("\n"))
-        : (data?.message || JSON.stringify(data));
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({} as any));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
 
-      const cleanJson = String(aiText).replace(/```json|```/g, "").trim();
-      const suggestion = JSON.parse(cleanJson);
-      
+      const data = await response.json();
+      const suggestion: Suggestion | undefined = data?.suggestion;
+
+      // Validate suggestion has required fields
+      if (
+        !suggestion ||
+        !suggestion.styleName ||
+        !suggestion.colors ||
+        !suggestion.colors.upper
+      ) {
+        throw new Error("Invalid AI suggestion format");
+      }
+
       setAiSuggestion(suggestion);
-      
-      setConversationHistory((h) => [
-        ...h,
+
+      // Update conversation history
+      setConversationHistory((prev) => [
+        ...prev,
         { role: "user", content: aiPrompt },
-        { role: "assistant", content: aiText }
+        { role: "assistant", content: JSON.stringify(suggestion) },
       ]);
-      
-    } catch (error) {
-      console.error("AI Error:", error);
-      setAiError("Couldn't generate suggestions. Try rephrasing your request!");
+
+      setAiPrompt(""); // Optional: clear input after success
+    } catch (error: any) {
+      console.error("Gemini AI Error:", error);
+      setAiError(
+        (error?.message || "").includes("Invalid")
+          ? "AI returned unexpected format. Try again!"
+          : "Failed to connect to AI. Check internet or try later."
+      );
     } finally {
       setIsAiLoading(false);
     }
@@ -404,16 +408,27 @@ Respond ONLY with valid JSON (no markdown, no backticks):
 
   const applyAISuggestion = () => {
     if (!aiSuggestion) return;
-    
+
     setCustom({
-      upper: { color: aiSuggestion.colors.upper, material: aiSuggestion.material || custom.upper.material },
-      accent: { color: aiSuggestion.colors.accent },
-      sole: { color: aiSuggestion.colors.sole },
-      text: aiSuggestion.textSuggestion || custom.text,
-      textSize: custom.textSize,
-      textColor: custom.textColor,
+      upper: {
+        color: aiSuggestion.colors.upper,
+        material: aiSuggestion.material,
+      },
+      accent: {
+        color: aiSuggestion.colors.accent,
+      },
+      sole: {
+        color: aiSuggestion.colors.sole,
+      },
+      text: aiSuggestion.textSuggestion || "",
+      textSize: custom.textSize ?? 20,
+      textColor: aiSuggestion.textColor || "#000000",
     });
-    
+
+    // Close the AI card
+    setAiSuggestion(null);
+
+    // Show success toast
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 2000);
   };
