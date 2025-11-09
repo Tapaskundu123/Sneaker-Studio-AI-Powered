@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Jost } from "next/font/google";
 import { Toaster } from "sonner";
@@ -11,22 +12,18 @@ const jost = Jost({
 export const metadata: Metadata = {
   title: "Nike",
   description: "An e-commerce platform for Nike shoes",
-   icons: {
-    icon: "/logo.png", // ✅ path from /public
+  icons: {
+    icon: "/logo.png",
   },
 };
 
-export default function RootShell({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${jost.className} antialiased`}>{children}
+      <body className={`${jost.className} antialiased`}>
+        <main>{children}</main>
         <Toaster position="top-center" richColors />
       </body>
-
     </html>
   );
 }

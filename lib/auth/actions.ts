@@ -3,24 +3,33 @@
 
 import { z } from "zod";
 import { mockUsers } from "../mock-data";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { SignInForm, SignUpForm } from "../types";
+
+type SignInForm = { email: string; password: string };
+type SignUpForm = { name: string; email: string; password: string };
 
 /* ---------- Schemas ---------- */
 const signInSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-const signUpSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().email("Invalid email"),
+  password: z.string().min(1, "Password required"),
 });
 
-/* ---------- Helper (pretend JWT) ---------- */
+const signUpSchema = z.object({
+  name: z.string().min(2, "Name too short"),
+  email: z.string().email("Invalid email"),
+  password: z.string().min(6, "Password must be 6+ chars"),
+});
+
+/* ---------- Helper: Set Auth Cookie ---------- */
 function setAuthCookie(userId: string) {
-  // In a real app you would set an httpOnly cookie with a JWT.
-  // For demo we just store in localStorage on client side later.
+  cookies().set("auth-token", userId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  });
 }
 
 /* ---------- signIn ---------- */
@@ -32,17 +41,29 @@ export async function signIn(formData: FormData) {
 
   const parsed = signInSchema.safeParse(raw);
   if (!parsed.success) {
-    return { error: "Invalid data", details: parsed.error.format() };
+    const fieldErrors = parsed.error.format();
+    return {
+      error: "Validation failed",
+      fields: {
+        email: fieldErrors.email?._errors[0],
+        password: fieldErrors.password?._errors[0],
+      },
+    };
   }
 
   const user = mockUsers.find(
-    (u) => u.email === parsed.data.email && u.password === parsed.data.password
+    (u) =>
+      u.email === parsed.data.email && u.password === parsed.data.password
   );
 
-  if (!user) return { error: "Invalid email or password" };
+  if (!user) {
+    return { error: "Invalid email or password" };
+  }
 
   setAuthCookie(user.id);
-  redirect("/customizer");
+
+  const redirectTo = formData.get("redirect")?.toString();
+  redirect(redirectTo || "/customizer");
 }
 
 /* ---------- signUp ---------- */
@@ -55,19 +76,32 @@ export async function signUp(formData: FormData) {
 
   const parsed = signUpSchema.safeParse(raw);
   if (!parsed.success) {
-    return { error: "Invalid data", details: parsed.error.format() };
+    const fieldErrors = parsed.error.format();
+    return {
+      error: "Validation failed",
+      fields: {
+        name: fieldErrors.name?._errors[0],
+        email: fieldErrors.email?._errors[0],
+        password: fieldErrors.password?._errors[0],
+      },
+    };
   }
 
   const exists = mockUsers.some((u) => u.email === parsed.data.email);
-  if (exists) return { error: "Email already taken" };
+  if (exists) {
+    return { error: "Email already taken", fields: { email: "Email in use" } };
+  }
 
-  // In real app: hash password + Prisma create
   const newUser = {
     id: crypto.randomUUID(),
+    name: parsed.data.name,
     email: parsed.data.email,
-    password: parsed.data.password, // <-- hash later
+    password: parsed.data.password, // TODO: hash with bcrypt
   };
+
   mockUsers.push(newUser);
   setAuthCookie(newUser.id);
-  redirect("/customizer");
+
+  const redirectTo = formData.get("redirect")?.toString();
+  redirect(redirectTo || "/customizer");
 }

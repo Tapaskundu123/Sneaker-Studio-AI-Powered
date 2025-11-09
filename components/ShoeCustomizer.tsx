@@ -126,6 +126,7 @@ export default function AIShoeCustomizer({ id, cloudinaryUrl }: Props) {
   }, [id]);
 
   // Canvas rendering
+   // Canvas rendering – DYNAMICALLY CENTERED & SCALED
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -139,8 +140,6 @@ export default function AIShoeCustomizer({ id, cloudinaryUrl }: Props) {
     ctx.clearRect(0, 0, cWidth, cHeight);
 
     const baseImg = new Image();
-
-    // Use Cloudinary URL if provided, else fallback to static SVG
     const imageSrc = cloudinaryUrl || products.find(p => p.id === selectedProduct)?.baseImage;
 
     if (!imageSrc) {
@@ -148,63 +147,100 @@ export default function AIShoeCustomizer({ id, cloudinaryUrl }: Props) {
       return;
     }
 
-    baseImg.onload = () => {
-      try {
-        ctx.drawImage(baseImg, 0, 0, cWidth, cHeight);
+  // Inside CanvasRenderer.tsx → inside img.onload = () => { ... }
 
-        // Upper gradient
-        const upperGradient = ctx.createLinearGradient(128, 96, cWidth - 256, cHeight - 264);
-        upperGradient.addColorStop(0, custom.upper.color);
-        upperGradient.addColorStop(1, adjustBrightness(custom.upper.color, -15));
-        ctx.fillStyle = upperGradient;
-        ctx.globalAlpha = custom.upper.material === "leather" ? 0.88 : 0.92;
-        ctx.fillRect(128, 96, cWidth - 256, 240);
-        ctx.globalAlpha = 1;
+baseImg.onload = () => {
+  const scale = Math.max(cWidth / baseImg.width, cHeight / baseImg.height);
+  const imgW = baseImg.width * scale;
+  const imgH = baseImg.height * scale;
+  const imgX = (cWidth - imgW) / 2;
+  const imgY = (cHeight - imgH) / 2;
 
-        // Accent
-        ctx.fillStyle = custom.accent.color;
-        ctx.fillRect(152, 216, cWidth - 304, 37);
+  ctx.drawImage(baseImg, imgX, imgY, imgW, imgH);
 
-        // Sole
-        ctx.fillStyle = custom.sole.color;
-        ctx.fillRect(112, 312, cWidth - 224, 40);
+  const rel = (percX: number, percY: number) => ({
+    x: imgX + imgW * percX,
+    y: imgY + imgH * percY,
+  });
 
-        // Shine
-        const shine = ctx.createLinearGradient(160, 112, cWidth - 192, 160);
-        shine.addColorStop(0, "rgba(255,255,255,0)");
-        shine.addColorStop(0.5, "rgba(255,255,255,0.4)");
-        shine.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.fillStyle = shine;
-        ctx.fillRect(160, 112, cWidth - 320, 64);
+  // UPPER PANEL – WIDE (75% of shoe)
+  const upper = {
+    x: rel(0.125, 0.42).x,   // 12.5% from left → wide + centered
+    y: rel(0.125, 0.42).y,   // 42% from top → lower
+    w: imgW * 0.75,          // 75% width
+    h: imgH * 0.28,          // height unchanged
+  };
 
-        // Text
-        if (custom.text) {
-          ctx.fillStyle = custom.textColor;
-          ctx.font = `bold ${custom.textSize * 1.5}px 'Arial Black', sans-serif`;
-          ctx.textAlign = "center";
-          ctx.shadowColor = "rgba(0,0,0,0.4)";
-          ctx.shadowBlur = 9;
-          ctx.shadowOffsetX = 3;
-          ctx.shadowOffsetY = 3;
-          ctx.fillText(custom.text, cWidth / 2, 224);
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 0;
-        }
-      } catch (err) {
-        console.error("Drawing error:", err);
-      }
-    };
+  const upperGrad = ctx.createLinearGradient(
+    upper.x,
+    upper.y,
+    upper.x + upper.w,
+    upper.y + upper.h
+  );
+  upperGrad.addColorStop(0, custom.upper.color);
+  upperGrad.addColorStop(1, adjustBrightness(custom.upper.color, -20));
+  ctx.fillStyle = upperGrad;
+  ctx.globalAlpha = custom.upper.material === "leather" ? 0.85 : 0.92;
+  ctx.fillRect(upper.x, upper.y, upper.w, upper.h);
+  ctx.globalAlpha = 1;
 
-    baseImg.onerror = () => {
-      console.error("Image failed to load:", imageSrc);
-    };
+  // ACCENT (BLACK) STRIPE – INSIDE UPPER, LOWER
+  const accent = {
+    x: upper.x + upper.w * 0.15,     // 15% inset from left
+    y: upper.y + upper.h * 0.70,     // 70% down → lower in panel
+    w: upper.w * 0.70,               // 70% of upper width
+    h: upper.h * 0.15,               // thin
+  };
+  ctx.fillStyle = custom.accent.color;
+  ctx.fillRect(accent.x, accent.y, accent.w, accent.h);
 
-    // Set crossOrigin only for external URLs
-    if (cloudinaryUrl) {
-      baseImg.crossOrigin = "anonymous";
-    }
+  // SOLE – unchanged
+  const sole = {
+    x: imgX + imgW * 0.12,
+    y: imgY + imgH * 0.78,
+    w: imgW * 0.76,
+    h: imgH * 0.12,
+  };
+  ctx.fillStyle = custom.sole.color;
+  ctx.fillRect(sole.x, sole.y, sole.w, sole.h);
 
+  // SHINE – on upper panel
+  const shine = ctx.createLinearGradient(
+    upper.x,
+    upper.y,
+    upper.x + upper.w,
+    upper.y + upper.h * 0.6
+  );
+  shine.addColorStop(0, "rgba(255,255,255,0)");
+  shine.addColorStop(0.4, "rgba(255,255,255,0.35)");
+  shine.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = shine;
+  ctx.fillRect(
+    upper.x + upper.w * 0.1,
+    upper.y + upper.h * 0.05,
+    upper.w * 0.8,
+    upper.h * 0.4
+  );
+
+  // TEXT – centered in upper panel
+  if (custom.text) {
+    const txtX = upper.x + upper.w / 2;
+    const txtY = upper.y + upper.h * 0.35;  // above accent stripe
+
+    ctx.fillStyle = custom.textColor;
+    ctx.font = `bold ${Math.min(custom.textSize * 1.6, upper.h * 0.5)}px 'Arial Black', sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(0,0,0,0.45)";
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText(custom.text, txtX, txtY);
+    ctx.shadowColor = "transparent";
+  }
+};
+    baseImg.onerror = () => console.error("Image failed to load:", imageSrc);
+    if (cloudinaryUrl) baseImg.crossOrigin = "anonymous";
     baseImg.src = imageSrc;
 
     return () => {

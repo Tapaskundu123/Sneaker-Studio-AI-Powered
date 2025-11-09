@@ -110,17 +110,16 @@ export const mockDesigns: SavedDesign[] = [
   },
 ];
 
-export const mockUsers: User[] = [
+export const mockUsers: Array<{
+  id: string;
+  name?: string;
+  email: string;
+  password: string;
+}> = [
   {
-    id: "uuid-1",
+    id: "user-1",
     name: "John Doe",
-    email: "test@example.com",
-    password: "hashed_password", // In real app: bcrypt.hashSync("password123")
-  },
-  {
-    id: "uuid-user",
-    name: "Alex Nike",
-    email: "user@nike.com",
-    password: "secure123",
+    email: "john@example.com",
+    password: "password123",
   },
 ];
