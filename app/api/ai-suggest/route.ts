@@ -13,6 +13,10 @@ interface RequestBody {
   selectedProduct: { name: string; options: { materials: string[] } };
 }
 
+/**
+ * keep the JSON schema you want the model to follow.
+ * We'll cast it to `any` when we hand it to the SDK to satisfy TS.
+ */
 const designSchema = {
   type: "object",
   properties: {
@@ -34,6 +38,30 @@ const designSchema = {
   },
   required: ["styleName", "description", "colors", "material", "textSuggestion", "textColor", "reasoning"],
 } as const;
+
+/** minimal runtime validator to ensure structure after JSON.parse */
+function validateSuggestion(s: any): s is {
+  styleName: string;
+  description: string;
+  colors: { upper: string; accent: string; sole: string };
+  material: string;
+  textSuggestion: string;
+  textColor: string;
+  reasoning: string;
+} {
+  if (!s || typeof s !== "object") return false;
+  const req = ["styleName","description","colors","material","textSuggestion","textColor","reasoning"];
+  for (const r of req) if (!(r in s)) return false;
+  if (typeof s.styleName !== "string") return false;
+  if (typeof s.description !== "string") return false;
+  if (typeof s.material !== "string") return false;
+  if (typeof s.textSuggestion !== "string") return false;
+  if (typeof s.textColor !== "string") return false;
+  if (typeof s.reasoning !== "string") return false;
+  if (typeof s.colors !== "object") return false;
+  if (typeof s.colors.upper !== "string" || typeof s.colors.accent !== "string" || typeof s.colors.sole !== "string") return false;
+  return true;
+}
 
 export async function POST(req: Request) {
   let body: RequestBody;
@@ -60,13 +88,13 @@ User Request: "${userInput}"`;
     model: "gemini-2.5-flash",
     generationConfig: {
       temperature: 0.8,
-      maxOutputTokens: 800, // ✅ Increased token limit
+      maxOutputTokens: 800,
       responseMimeType: "application/json",
-      responseSchema: designSchema,
+      // Cast the schema to `any` to satisfy the SDK TS signatures.
+      // The runtime validator below will still check the parsed response.
+      responseSchema: designSchema as any,
     },
   });
-
-  console.log("Sending to Gemini...");
 
   let result;
   try {
@@ -74,20 +102,16 @@ User Request: "${userInput}"`;
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
   } catch (err: any) {
-    console.error("Gemini API error:", err.message);
+    console.error("Gemini API error:", err?.message || err);
     return NextResponse.json({ error: "AI service down" }, { status: 502 });
   }
 
   let responseText = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  console.log("Raw response:", responseText.substring(0, 500));
-
   let suggestion;
   try {
     suggestion = JSON.parse(responseText);
   } catch {
-    console.warn("Malformed JSON. Retrying without schema...");
-
-    // ✅ Fallback: retry without schema
+    // Fallback attempt without schema
     const fallbackModel = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
@@ -101,11 +125,9 @@ User Request: "${userInput}"`;
       const fallbackResult = await fallbackModel.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
-
       responseText = fallbackResult?.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      console.log("Fallback response:", responseText.substring(0, 500));
       suggestion = JSON.parse(responseText);
-    } catch {
+    } catch (err) {
       return NextResponse.json(
         { error: "AI failed both schema and fallback attempts.", raw: responseText },
         { status: 502 }
@@ -113,11 +135,9 @@ User Request: "${userInput}"`;
     }
   }
 
-  const required = ["styleName", "description", "colors", "material", "textSuggestion", "textColor", "reasoning"];
-  for (const field of required) {
-    if (!(field in suggestion)) {
-      return NextResponse.json({ error: `Missing: ${field}` }, { status: 422 });
-    }
+  // runtime validation
+  if (!validateSuggestion(suggestion)) {
+    return NextResponse.json({ error: "Invalid suggestion shape", raw: suggestion }, { status: 422 });
   }
 
   return NextResponse.json({ suggestion });

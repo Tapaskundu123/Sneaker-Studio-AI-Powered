@@ -117,7 +117,7 @@ export default function AIShoeCustomizer({ id, cloudinaryUrl }: Props) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [conversationHistory] = useState<any[]>([]);
+
 
   // Sync with URL id
   useEffect(() => {
