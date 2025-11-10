@@ -1,4 +1,3 @@
-// lib/auth/actions.ts
 "use server";
 
 import { z } from "zod";
@@ -22,8 +21,9 @@ const signUpSchema = z.object({
 });
 
 /* ---------- Helper: Set Auth Cookie ---------- */
-function setAuthCookie(userId: string) {
-  cookies().set("auth-token", userId, {
+async function setAuthCookie(userId: string) {
+  const cookieStore = await cookies(); // ✅ Await for server actions
+  cookieStore.set("auth-token", userId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -60,7 +60,7 @@ export async function signIn(formData: FormData) {
     return { error: "Invalid email or password" };
   }
 
-  setAuthCookie(user.id);
+  await setAuthCookie(user.id); // ✅ fixed
 
   const redirectTo = formData.get("redirect")?.toString();
   redirect(redirectTo || "/customizer");
@@ -96,12 +96,19 @@ export async function signUp(formData: FormData) {
     id: crypto.randomUUID(),
     name: parsed.data.name,
     email: parsed.data.email,
-    password: parsed.data.password, // TODO: hash with bcrypt
+    password: parsed.data.password, // ⚠ TODO: hash with bcrypt
   };
 
   mockUsers.push(newUser);
-  setAuthCookie(newUser.id);
+  await setAuthCookie(newUser.id); // ✅ fixed
 
   const redirectTo = formData.get("redirect")?.toString();
   redirect(redirectTo || "/customizer");
+}
+
+/* ---------- logout (optional helper) ---------- */
+export async function logout() {
+  const cookieStore = await cookies();
+  cookieStore.delete("auth-token"); // ✅ properly clears cookie
+  redirect("/sign-in");
 }
