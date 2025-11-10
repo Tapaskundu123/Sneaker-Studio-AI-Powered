@@ -14,15 +14,13 @@ export async function getProducts(): Promise<Product[]> {
 /* ---------- Save a design ---------- */
 const saveSchema = z.object({
   productId: z.string(),
-  customizations: z.record(z.any()),
+  customizations: z.record(z.string(), z.any()), // ✅ Fixed here
   tags: z.array(z.string()).optional(),
 });
 
 export async function saveDesign(formData: FormData) {
   const productId = formData.get("productId") as string;
-  const customizations = JSON.parse(
-    formData.get("customizations") as string
-  );
+  const customizations = JSON.parse(formData.get("customizations") as string);
   const tags = formData.get("tags")
     ? (formData.get("tags") as string).split(",").map((t) => t.trim())
     : [];
@@ -32,11 +30,11 @@ export async function saveDesign(formData: FormData) {
 
   const newDesign: SavedDesign = {
     id: crypto.randomUUID(),
-    userId: "uuid-user", // <-- replace with real session userId
+    userId: "uuid-user", // TODO: Replace with real session user ID
     productId: parsed.data.productId,
     customizations: parsed.data.customizations,
-    previewImage: "/images/preview-generated.png", // canvas later
-    tags: parsed.data.tags,
+    previewImage: "/images/preview-generated.png",
+    tags: parsed.data.tags!,
     created_at: new Date().toISOString(),
   };
 
