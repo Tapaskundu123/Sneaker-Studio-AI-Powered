@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { connectDB } from '@/lib/dbConnect';
-import Customization from '@/models/Customization';
+import Customization from '@/models/customization';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectDB();

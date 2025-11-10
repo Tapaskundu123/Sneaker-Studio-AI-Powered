@@ -1,14 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 👇 This ensures Next knows your real project root (important if you’re in a subfolder)
+  turbopack: {
+    root: "./", // or "../" if your next.config.ts is nested inside my-app
+  },
+
   async rewrites() {
     return [
-      // Optional: keep Cloudinary proxy if you actually use it
       {
         source: "/cloudinary/:path*",
         destination: "https://res.cloudinary.com/:path*",
       },
     ];
   },
+
   images: {
     remotePatterns: [
       {
