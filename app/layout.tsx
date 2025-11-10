@@ -8,7 +8,8 @@ const jost = Jost({ variable: "--font-jost", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Nike",
   description: "An e-commerce platform for Nike shoes",
-  icons: { icon: "/logo.png" },
+  // icons: { icon: "/logo.png" },
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
