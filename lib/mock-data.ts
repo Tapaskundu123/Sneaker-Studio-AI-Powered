@@ -1,5 +1,5 @@
 // lib/mock-data.ts
-import type { Product, SavedDesign, User } from "./types";
+import type { Product, SavedDesign} from "./types";
 
 export const mockProducts: Product[] = [
   {
