@@ -142,3 +142,4 @@ User Request: "${userInput}"`;
 
   return NextResponse.json({ suggestion });
 }
+

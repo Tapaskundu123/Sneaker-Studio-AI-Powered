@@ -1,11 +1,13 @@
 // app/customizer/[id]/page.tsx
 import AIShoeCustomizer from "@/components/ShoeCustomizer";
+import { connectDB } from "@/lib/dbConnect";
 import { Product } from "@/models/product.model";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   // ✅ Await params before using
   const { id } = await params;
-
+  await connectDB();
+  
   if (!id || typeof id !== "string") {
     return <div className="p-8 text-red-600">Invalid product ID</div>;
   }
