@@ -6,32 +6,36 @@ import { useState } from "react";
 import logo from "../app/(auth)/logo.svg";
 import { Button } from "@/components/ui/button";
 
-const NAV_LINKS = [
+type NavLink = {
+  label: string;
+  href: string;
+};
+
+const NAV_LINKS: readonly NavLink[] = [
   { label: "Men", href: "/products?gender=men" },
   { label: "Women", href: "/products?gender=women" },
   { label: "Kids", href: "/products?gender=unisex" },
   { label: "Collections", href: "/collections" },
   { label: "Contact", href: "/contact" },
-] as const;
+];
 
-export default function Navbar(): JSX.Element {
+export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const toggleSidebar = (): void => setSidebarOpen((prev) => !prev);
-  const closeSidebar = (): void => setSidebarOpen(false);
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+  const closeSidebar = () => setSidebarOpen(false);
 
-  const handleLogout = async (): Promise<void> => {
+  const handleLogout = async () => {
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });
       const data: { success: boolean; message?: string } = await response.json();
 
       if (data.success) {
-        // 🔁 Full page reload to sign-in
-        window.location.href = "/sign-in";
+        window.location.href = "/sign-in"; // redirect after logout
       } else {
         console.error("Logout failed:", data.message);
       }
-    } catch (error: unknown) {
+    } catch (error) {
       if (error instanceof Error) {
         console.error("Logout error:", error.message);
       } else {
@@ -42,7 +46,7 @@ export default function Navbar(): JSX.Element {
 
   return (
     <>
-      {/* Desktop + Mobile Header */}
+      {/* === Desktop + Mobile Header === */}
       <header className="sticky top-0 z-40 bg-white shadow-sm">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
@@ -76,12 +80,14 @@ export default function Navbar(): JSX.Element {
             <button className="text-sm font-medium text-gray-900 hover:text-gray-600">
               Search
             </button>
+
             <button className="relative text-sm font-medium text-gray-900 hover:text-gray-600">
               My Cart
               <span className="absolute -top-1 -right-3 flex h-5 w-5 items-center justify-center rounded-full bg-black text-xs text-white">
                 2
               </span>
             </button>
+
             {/* ✅ Logout visible on desktop */}
             <Button
               onClick={handleLogout}
@@ -97,7 +103,6 @@ export default function Navbar(): JSX.Element {
             className="inline-flex items-center justify-center rounded-md p-2 text-gray-900 md:hidden"
             aria-label="Toggle menu"
           >
-            {/* Hamburger Icon */}
             <svg
               className="h-6 w-6"
               fill="none"
@@ -124,7 +129,7 @@ export default function Navbar(): JSX.Element {
         </nav>
       </header>
 
-      {/* Mobile Sidebar */}
+      {/* === Mobile Sidebar === */}
       <div
         className={`fixed inset-y-0 right-0 z-50 w-80 max-w-full transform bg-white shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
           sidebarOpen ? "translate-x-0" : "translate-x-full"
@@ -179,8 +184,14 @@ export default function Navbar(): JSX.Element {
         {/* Sidebar Footer - Actions */}
         <div className="border-t border-gray-200 px-4 py-6">
           <div className="space-y-4">
+            {/* Search Button */}
             <button className="flex w-full items-center gap-3 rounded-md px-4 py-3 text-base font-medium text-gray-900 transition-colors hover:bg-gray-100">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -191,6 +202,7 @@ export default function Navbar(): JSX.Element {
               Search
             </button>
 
+            {/* Cart Button */}
             <button className="flex w-full items-center justify-between rounded-md px-4 py-3 text-base font-medium text-gray-900 transition-colors hover:bg-gray-100">
               <div className="flex items-center gap-3">
                 <svg
