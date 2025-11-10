@@ -1,6 +1,5 @@
 'use client'
 
-// components/DesignGallery.tsx
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { getDesigns, deleteDesign } from "@/lib/design/action";
@@ -13,10 +12,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
 
+type SavedDesign = {
+  id: string;
+  previewImage: string;
+  tags: string[];
+  customizations: {
+    text?: string;
+  };
+};
+
 type Props = { userId: string };
 
 export default function DesignGallery({ userId }: Props) {
-  const [designs, setDesigns] = useState([]);
+  const [designs, setDesigns] = useState<SavedDesign[]>([]);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<string[]>([]);
   const [page, setPage] = useState(1);
