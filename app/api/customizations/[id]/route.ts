@@ -1,19 +1,33 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { connectDB } from '@/lib/dbConnect';
-import Customization from '@/models/customization';
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/dbConnect";
+import Customization from "@/models/customization";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   await connectDB();
-  const { id } = req.query;
+  const item = await Customization.findById(params.id);
+  return NextResponse.json(item);
+}
 
-  if (req.method === 'GET') {
-    const item = await Customization.findById(id);
-    res.json(item);
-  } else if (req.method === 'PUT') {
-    const updated = await Customization.findByIdAndUpdate(id, req.body, { new: true });
-    res.json(updated);
-  } else if (req.method === 'DELETE') {
-    await Customization.findByIdAndDelete(id);
-    res.status(204).end();
-  }
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  await connectDB();
+  const data = await req.json();
+  const updated = await Customization.findByIdAndUpdate(params.id, data, {
+    new: true,
+  });
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  await connectDB();
+  await Customization.findByIdAndDelete(params.id);
+  return NextResponse.json({ success: true }, { status: 204 });
 }
