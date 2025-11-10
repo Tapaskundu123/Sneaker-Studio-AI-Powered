@@ -1,5 +1,5 @@
 // app/page.tsx (or wherever Home is)
-import React from "react";
+
 import Card from "../../components/Card";
 import { HeroSection } from "@/components/HeroSection";
 import TrendingPage from "@/components/TrendingPage";
@@ -23,7 +23,7 @@ const Home = async () => {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((p) => (
   <Card
-    key={p._id}
+    key={p.id}
     id={p.id} // ✅ Use _id here
     title={p.title}
     subtitle={p.subtitle}
