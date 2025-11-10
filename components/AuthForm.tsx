@@ -55,7 +55,8 @@ export default function AuthForm({ mode }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div className="text-center">
         <p className="text-caption text-dark-700">
           {mode === "sign-in" ? "Don’t have an account? " : "Already have an account? "}
@@ -73,6 +74,7 @@ export default function AuthForm({ mode }: Props) {
         </p>
       </div>
 
+      {/* Divider */}
       <div className="flex items-center gap-4">
         <hr className="h-px w-full border-0 bg-light-300" />
         <span className="shrink-0 text-caption text-dark-700">
@@ -81,7 +83,8 @@ export default function AuthForm({ mode }: Props) {
         <hr className="h-px w-full border-0 bg-light-300" />
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      {/* Form */}
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {mode === "sign-up" && (
           <div className="space-y-1">
             <label htmlFor="name" className="text-caption text-dark-900">
@@ -92,7 +95,7 @@ export default function AuthForm({ mode }: Props) {
               name="name"
               type="text"
               placeholder="Enter your name"
-              className="w-full rounded-xl border border-light-300 bg-light-100 px-4 py-3 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
+              className="w-full max-w-2xl rounded-xl border border-light-300 bg-light-100 px-5 py-4 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
               autoComplete="name"
               required
             />
@@ -108,7 +111,7 @@ export default function AuthForm({ mode }: Props) {
             name="email"
             type="email"
             placeholder="johndoe@gmail.com"
-            className="w-full rounded-xl border border-light-300 bg-light-100 px-4 py-3 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
+            className="w-full max-w-2xl rounded-xl border border-light-300 bg-light-100 px-5 py-4 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
             autoComplete="email"
             required
           />
@@ -118,13 +121,13 @@ export default function AuthForm({ mode }: Props) {
           <label htmlFor="password" className="text-caption text-dark-900">
             Password
           </label>
-          <div className="relative">
+          <div className="relative w-full max-w-2xl">
             <input
               id="password"
               name="password"
               type={show ? "text" : "password"}
               placeholder="minimum 8 characters"
-              className="w-full rounded-xl border border-light-300 bg-light-100 px-4 py-3 pr-12 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
+              className="w-full rounded-xl border border-light-300 bg-light-100 px-5 py-4 pr-12 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
               autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
               minLength={8}
               required
@@ -140,13 +143,11 @@ export default function AuthForm({ mode }: Props) {
           </div>
         </div>
 
-        {error && (
-          <p className="text-sm text-red-600 text-center">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
         <button
           type="submit"
-          className="mt-2 w-full rounded-full bg-dark-900 px-6 py-3 text-body-medium text-light-100 hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-dark-900/20 transition"
+          className="mt-3 w-full max-w-2xl rounded-full bg-dark-900 px-8 py-4 text-body-medium text-light-100 hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-dark-900/20 transition cursor-pointer"
         >
           {mode === "sign-in" ? "Sign In" : "Sign Up"}
         </button>
