@@ -3,31 +3,35 @@ import { connectDB } from "@/lib/dbConnect";
 import Customization from "@/models/customization";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   await connectDB();
-  const item = await Customization.findById(params.id);
+
+  const item = await Customization.findById(id);
   return NextResponse.json(item);
 }
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+  const data = await request.json();
+
   await connectDB();
-  const data = await req.json();
-  const updated = await Customization.findByIdAndUpdate(params.id, data, {
-    new: true,
-  });
+  const updated = await Customization.findByIdAndUpdate(id, data, { new: true });
   return NextResponse.json(updated);
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
   await connectDB();
-  await Customization.findByIdAndDelete(params.id);
-  return NextResponse.json({ success: true }, { status: 204 });
+
+  await Customization.findByIdAndDelete(id);
+  return NextResponse.json({ message: "Deleted successfully" }, { status: 200 });
 }
