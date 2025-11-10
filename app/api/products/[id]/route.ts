@@ -1,20 +1,37 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { connectDB } from '@/lib/dbConnect';
-import { Product } from '@/models/product.model';
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/dbConnect";
+import { Product } from "@/models/product.model";
 
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
   await connectDB();
-  const { id } = req.query;
 
-  if (req.method === 'GET') {
-    const product = await Product.findById(id);
-    res.json(product);
-  } else if (req.method === 'PUT') {
-    const updated = await Product.findByIdAndUpdate(id, req.body, { new: true });
-    res.json(updated);
-  } else if (req.method === 'DELETE') {
-    await Product.findByIdAndDelete(id);
-    res.status(204).end();
-  }
+  const product = await Product.findById(id);
+  return NextResponse.json(product);
+}
+
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  const data = await request.json();
+
+  await connectDB();
+  const updated = await Product.findByIdAndUpdate(id, data, { new: true });
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  await connectDB();
+
+  await Product.findByIdAndDelete(id);
+  return NextResponse.json({ message: "Product deleted successfully" }, { status: 200 });
 }
