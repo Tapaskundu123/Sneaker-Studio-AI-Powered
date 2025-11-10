@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import logo from "../app/(auth)/logo.svg";
+import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { label: "Men", href: "/products?gender=men" },
@@ -13,11 +14,31 @@ const NAV_LINKS = [
   { label: "Contact", href: "/contact" },
 ] as const;
 
-export default function Navbar() {
+export default function Navbar(): JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
-  const closeSidebar = () => setSidebarOpen(false);
+  const toggleSidebar = (): void => setSidebarOpen((prev) => !prev);
+  const closeSidebar = (): void => setSidebarOpen(false);
+
+  const handleLogout = async (): Promise<void> => {
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      const data: { success: boolean; message?: string } = await response.json();
+
+      if (data.success) {
+        // 🔁 Full page reload to sign-in
+        window.location.href = "/sign-in";
+      } else {
+        console.error("Logout failed:", data.message);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Logout error:", error.message);
+      } else {
+        console.error("Unknown error during logout:", error);
+      }
+    }
+  };
 
   return (
     <>
@@ -61,6 +82,13 @@ export default function Navbar() {
                 2
               </span>
             </button>
+            {/* ✅ Logout visible on desktop */}
+            <Button
+              onClick={handleLogout}
+              className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800 cursor-pointer"
+            >
+              Logout
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -96,7 +124,7 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* Mobile Sidebar - Full Height, White, Right Side */}
+      {/* Mobile Sidebar */}
       <div
         className={`fixed inset-y-0 right-0 z-50 w-80 max-w-full transform bg-white shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
           sidebarOpen ? "translate-x-0" : "translate-x-full"
@@ -118,7 +146,6 @@ export default function Navbar() {
             className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
             aria-label="Close menu"
           >
-            {/* Close Icon */}
             <svg
               className="h-6 w-6"
               fill="none"
@@ -154,14 +181,30 @@ export default function Navbar() {
           <div className="space-y-4">
             <button className="flex w-full items-center gap-3 rounded-md px-4 py-3 text-base font-medium text-gray-900 transition-colors hover:bg-gray-100">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               Search
             </button>
+
             <button className="flex w-full items-center justify-between rounded-md px-4 py-3 text-base font-medium text-gray-900 transition-colors hover:bg-gray-100">
               <div className="flex items-center gap-3">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
                 </svg>
                 My Cart
               </div>
@@ -169,6 +212,14 @@ export default function Navbar() {
                 2
               </span>
             </button>
+
+            {/* ✅ Logout visible on mobile sidebar */}
+            <Button
+              onClick={handleLogout}
+              className="w-full rounded-md bg-black px-4 py-3 text-base font-medium text-white hover:bg-gray-800 transition-colors cursor-pointer"
+            >
+              Logout
+            </Button>
           </div>
         </div>
       </div>

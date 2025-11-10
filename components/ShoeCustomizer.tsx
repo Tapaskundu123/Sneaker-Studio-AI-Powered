@@ -438,7 +438,7 @@ baseImg.onload = () => {
                 <div className="pt-4 border-t space-y-2">
                   <Button variant="outline" className="w-full" onClick={handleRandom}><Shuffle className="mr-2 h-4 w-4" /> Random</Button>
                   <Button variant="secondary" className="w-full" onClick={() => setCustom({ upper: { color: "#FFFFFF", material: "canvas" }, accent: { color: "#000000" }, sole: { color: "#FFFFFF" }, text: "", textSize: 20, textColor: "#000000" })}><RotateCcw className="mr-2 h-4 w-4" /> Reset</Button>
-                  <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-500" onClick={handleSave} disabled={isSaving}>
+                  <Button className="w-full  from-green-500 to-emerald-500" onClick={handleSave} disabled={isSaving}>
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     {isSaving ? "Saving..." : "Save"}
                   </Button>

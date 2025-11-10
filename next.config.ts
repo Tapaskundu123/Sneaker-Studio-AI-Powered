@@ -1,13 +1,19 @@
-// next.config.ts
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  async rewrites() {
+    return [
+      // Optional: keep Cloudinary proxy if you actually use it
+      {
+        source: "/cloudinary/:path*",
+        destination: "https://res.cloudinary.com/:path*",
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
-        port: "",
         pathname: "/**",
       },
     ],
