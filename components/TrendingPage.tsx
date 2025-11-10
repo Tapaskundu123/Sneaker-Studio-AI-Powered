@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import React from 'react';
 import timage_1 from '../public/trending-1.png';
 import timage_2 from '../public/trending-2.png';
 import timage_3 from '../public/trending-3.png';

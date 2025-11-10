@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import dbConnect from '../../../lib/dbConnect';
-import Customization from '../../../models/Customization';
+import { connectDB } from '@/lib/dbConnect';
+import Customization from '@/models/Customization';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  await dbConnect();
+  await connectDB();
   const { id } = req.query;
 
   if (req.method === 'GET') {

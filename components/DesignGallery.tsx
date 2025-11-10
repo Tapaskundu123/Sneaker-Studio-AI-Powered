@@ -1,3 +1,5 @@
+'use client'
+
 // components/DesignGallery.tsx
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
